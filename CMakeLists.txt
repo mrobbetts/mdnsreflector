@@ -1,6 +1,6 @@
 project(MDNSREFLECTOR)
 
-# cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.21)
 
 set(CMAKE_CXX_STANDARD 20)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -8,9 +8,20 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 cmake_policy(SET CMP0063 NEW)
 cmake_policy(SET CMP0057 NEW)
 
+IF(APPLE)
+  set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+  set(CMAKE_HAVE_THREADS_LIBRARY 1)
+  set(CMAKE_USE_WIN32_THREADS_INIT 0)
+  set(CMAKE_USE_PTHREADS_INIT 1)
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+ENDIF()
+
+find_package(Threads REQUIRED)
+
 find_package(Boost REQUIRED)
 
 add_executable(mdnsreflector main.cpp)
+target_link_libraries(mdnsreflector ${Boost_LIBRARIES} Threads::Threads)
 
 install(TARGETS mdnsreflector DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 

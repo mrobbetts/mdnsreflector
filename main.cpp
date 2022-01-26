@@ -87,8 +87,15 @@ int main(int argc, char** argv) {
         // socket.send_to(boost::asio::buffer(buffer, bytes_transferred), sender);
         // std::cout << "Packet received (" << std::to_string(bytes_transferred) << "B), from " << sender.address() << ": " << sender.port() << std::endl;
 
-        std::size_t bytes_transferred = inpSocket.receive(boost::asio::buffer(buffer));
-        std::cout << "Will send " << std::to_string(bytes_transferred) << "B to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
+        boost::asio::ip::udp::endpoint sender_endpoint;
+        std::size_t bytes_transferred = inpSocket.receive_from(boost::asio::buffer(buffer), sender_endpoint);
+
+        if (sender_endpoint.address() != listen_addr) {
+            std::cout << "Will send " << std::to_string(bytes_transferred) << "B to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
+        } else {
+            std::cout << "Filtering out packet originating from us" << std::endl;
+        }
+        // std::cout << "Will send " << std::to_string(bytes_transferred) << "B to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
 
         // boost::asio::ip::udp::endpoint sender(mcast_addr, port_mcast);
         outSocket.send_to(boost::asio::buffer(buffer, bytes_transferred), listen_endpoint);

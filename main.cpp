@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     /////
     // Input socket.
 
-    boost::asio::ip::udp::endpoint listen_endpoint(listen_addr, port_mcast);
+    boost::asio::ip::udp::endpoint listen_endpoint(mcast_addr, port_mcast);
     boost::asio::ip::udp::socket   inpSocket(io_context);
 
     std::cout << "Opening new input socket" << std::endl;
@@ -55,7 +55,9 @@ int main(int argc, char** argv) {
                                              << ")" << std::endl;
 
     std::cout << "Joining multicast group on input socket" << std::endl;
-    inpSocket.set_option(boost::asio::ip::multicast::join_group(mcast_addr.to_v4(), listen_addr.to_v4()), ec);
+    inpSocket.set_option(boost::asio::ip::multicast::join_group(mcast_addr.to_v4(),
+                                                                listen_addr.to_v4()),
+                         ec);
 
     /////
     // Output socket.
@@ -80,7 +82,7 @@ int main(int argc, char** argv) {
     // std::cout << "Joining multicast group on output socket" << std::endl;
     // outSocket.set_option(boost::asio::ip::multicast::join_group(mcast_addr.to_v4(), listen_addr.to_v4()), ec);
 
-    std::cout << "Listening for a datagrams..." << std::endl;
+    std::cout << "Listening for datagrams..." << std::endl;
     for (;;) {
         char buffer[65536];
         // boost::asio::ip::udp::endpoint sender;

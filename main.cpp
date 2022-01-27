@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
         std::size_t bytes_transferred = inpSocket.receive_from(boost::asio::buffer(buffer), sender_endpoint);
 
         if (sender_endpoint.address() != listen_addr) {
-            std::cout << "Will send " << std::to_string(bytes_transferred) << "B to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
+            std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << sender_endpoint.address() << " to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
         } else {
             std::cout << "Filtering out packet originating from us" << std::endl;
         }

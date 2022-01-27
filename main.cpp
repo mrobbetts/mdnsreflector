@@ -44,7 +44,12 @@ int main(int argc, char** argv) {
 
     // std::cout << "Binding to input socket" << std::endl;
     inpSocket.bind(listen_endpoint, ec);
-    std::cout << "Binding to input socket (" << inpSocket.local_endpoint().address() << ":" << inpSocket.local_endpoint().port()
+    if (ec.failed()) {
+        std::cout << "Bind failed with message: " << ec.message() << std::endl;
+        return -1;
+    }
+    std::cout << "Binding to input socket (" << listen_endpoint.address() << ":" << listen_endpoint.port()
+                                            // << inpSocket.local_endpoint().address() << ":" << inpSocket.local_endpoint().port()
                                             //  << ", "
                                             //  << inpSocket.remote_endpoint().address() << ":" << inpSocket.remote_endpoint().port()
                                              << ")" << std::endl;
@@ -67,7 +72,7 @@ int main(int argc, char** argv) {
     outSocket.bind(sender_endpoint, ec);
     if (ec.failed()) {
         std::cout << "Bind failed with message: " << ec.message() << std::endl;
-        throw;
+        return -1;
     }
 
     std::cout << "Binding to output socket (" << outSocket.local_endpoint().address() << ":" << outSocket.local_endpoint().port() << ")" << std::endl;

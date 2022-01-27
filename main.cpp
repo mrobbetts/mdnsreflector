@@ -19,10 +19,8 @@ int main(int argc, char** argv) {
 
     std::cout << "Will listen for mDNS packets on " << address_listen << " and rebroadcast on " << address_sender << std::endl;
 
-    // std::string address_mcast = "224.0.0.0";
-    std::string address_mcast = "224.0.0.251"; // mDNS.
-    // unsigned short address_port = 50000;
-    unsigned short port_mcast = 5353;
+    std::string const address_mcast = "224.0.0.251"; // mDNS.
+    unsigned short const port_mcast = 5353;
 
     boost::system::error_code ec;
     boost::asio::ip::address listen_addr = boost::asio::ip::address::from_string(address_listen, ec);
@@ -32,13 +30,11 @@ int main(int argc, char** argv) {
 
     boost::asio::io_context io_context;
 
-    boost::asio::ip::udp::endpoint listen_endpoint(mcast_addr, port_mcast);
-
-    boost::asio::ip::udp::socket inpSocket(io_context);
-
-
     /////
     // Input socket.
+
+    boost::asio::ip::udp::endpoint listen_endpoint(listen_addr, port_mcast);
+    boost::asio::ip::udp::socket   inpSocket(io_context);
 
     std::cout << "Opening new input socket" << std::endl;
     inpSocket.open(listen_endpoint.protocol(), ec); // boost::asio::ip::udp::socket

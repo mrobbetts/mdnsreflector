@@ -8,9 +8,15 @@
 
 int main(int argc, char** argv) {
 
+    bool reflector = false;
     if (argc < 2) {
         std::cout << "Args!" << std::endl;
         abort();
+    } else if (argc == 2) {
+        std::cout << "In listener mode." << std::endl;
+    } else {
+        std::cout << "In reflector mode." << std::endl;
+        reflector = true;
     }
 
     // std::string address_listen = "10.2.10.132";
@@ -19,21 +25,22 @@ int main(int argc, char** argv) {
 
     std::cout << "Will listen for mDNS packets on " << address_listen << " and rebroadcast on " << address_sender << std::endl;
 
-    std::string const address_mcast = "224.0.0.251"; // mDNS.
-    unsigned short const port_mcast = 5353;
+    // std::string const address_mcast = "224.0.0.251"; // mDNS.
 
     boost::system::error_code ec;
     boost::asio::ip::address listener_addr  = boost::asio::ip::address::from_string(address_listen, ec);
     boost::asio::ip::address reflector_addr = boost::asio::ip::address::from_string(address_sender, ec);
 
-    boost::asio::ip::address mcast_addr = boost::asio::ip::address::from_string(address_mcast, ec);
+    boost::asio::ip::address mcast_addr = boost::asio::ip::address::from_string("224.0.0.251", ec);
 
     boost::asio::io_context io_context;
 
     /////
     // Input socket.
 
+    constexpr unsigned short const port_mcast = 5353;
     boost::asio::ip::udp::endpoint listen_endpoint(mcast_addr, port_mcast);
+    // boost::asio::ip::udp::endpoint listen_endpoint(listener_addr, port_mcast);
     boost::asio::ip::udp::socket   inpSocket(io_context);
 
     std::cout << "Opening new input socket" << std::endl;
@@ -41,6 +48,16 @@ int main(int argc, char** argv) {
 
     std::cout << "Enabling reuse_address on input socket" << std::endl;
     inpSocket.set_option(boost::asio::ip::udp::socket::reuse_address(true), ec);
+    if (ec) {
+        std::cout << "set_option(reuse_address) failed with message: " << ec.message() << std::endl;
+        return ec.value();
+    }
+
+    inpSocket.set_option(boost::asio::ip::multicast::hops(1), ec); // set hops
+	if (ec) {
+        std::cout << "set_option(hops) failed with message: " << ec.message() << std::endl;
+        return ec.value();
+    }
 
     // std::cout << "Binding to input socket" << std::endl;
     inpSocket.bind(listen_endpoint, ec);
@@ -102,7 +119,9 @@ int main(int argc, char** argv) {
         // std::cout << "Will send " << std::to_string(bytes_transferred) << "B to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
 
         // boost::asio::ip::udp::endpoint sender(mcast_addr, port_mcast);
-        outSocket.send_to(boost::asio::buffer(buffer, bytes_transferred), listen_endpoint);
+        if (reflector) {
+            outSocket.send_to(boost::asio::buffer(buffer, bytes_transferred), listen_endpoint);
+        }
     }
 
     return 0;

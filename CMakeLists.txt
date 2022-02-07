@@ -17,11 +17,11 @@ IF(APPLE)
 ENDIF()
 
 find_package(Threads REQUIRED)
-
 find_package(Boost REQUIRED)
 
 add_executable(mdnsreflector main.cpp)
 target_link_libraries(mdnsreflector ${Boost_LIBRARIES} Threads::Threads)
+target_compile_options(mdnsreflector PRIVATE -Werror -Wall -Wextra)
 
 install(TARGETS mdnsreflector DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 

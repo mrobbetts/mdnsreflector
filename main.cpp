@@ -93,9 +93,9 @@ int main(int argc, char** argv) {
         boost::asio::ip::udp::endpoint originator_endpoint;
         std::size_t bytes_transferred = inpSocket.receive_from(boost::asio::buffer(buffer), originator_endpoint);
 
-        if (originator_endpoint.address() != listener_addr) {
+        if (originator_endpoint.address().to_v4() != listener_addr.to_v4()) {
             // std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << originator_endpoint.address() << " to " << originator_endpoint.address() << ":" << listen_endpoint.port() << " on " << reflector_endpoint.address() << std::endl;
-            std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << originator_endpoint.address() << " to " << originator_endpoint.address() << ":" << listen_endpoint.port() << " on " << outSocket.local_endpoint().address() << std::endl;
+            std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << originator_endpoint.address() << " (i.e. _not_ " << listener_addr.to_v4() << ") to " << listen_endpoint.address() << ":" << listen_endpoint.port() << " on " << outSocket.local_endpoint().address() << std::endl;
         } else {
             std::cout << "Filtering out packet originating from us" << std::endl;
         }

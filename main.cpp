@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
     unsigned short const port_mcast = 5353;
 
     boost::system::error_code ec;
-    boost::asio::ip::address listen_addr = boost::asio::ip::address::from_string(address_listen, ec);
-    boost::asio::ip::address sender_addr = boost::asio::ip::address::from_string(address_sender, ec);
+    boost::asio::ip::address listener_addr  = boost::asio::ip::address::from_string(address_listen, ec);
+    boost::asio::ip::address reflector_addr = boost::asio::ip::address::from_string(address_sender, ec);
 
     boost::asio::ip::address mcast_addr = boost::asio::ip::address::from_string(address_mcast, ec);
 
@@ -56,22 +56,22 @@ int main(int argc, char** argv) {
 
     std::cout << "Joining multicast group on input socket" << std::endl;
     inpSocket.set_option(boost::asio::ip::multicast::join_group(mcast_addr.to_v4(),
-                                                                listen_addr.to_v4()),
+                                                                listener_addr.to_v4()),
                          ec);
 
     /////
     // Output socket.
 
-    boost::asio::ip::udp::endpoint sender_endpoint(sender_addr, port_mcast);
+    boost::asio::ip::udp::endpoint reflector_endpoint(reflector_addr, port_mcast);
     boost::asio::ip::udp::socket   outSocket(io_context);
 
     std::cout << "Opening output socket" << std::endl;
-    outSocket.open(sender_endpoint.protocol(), ec); // boost::asio::ip::udp::socket
+    outSocket.open(reflector_endpoint.protocol(), ec); // boost::asio::ip::udp::socket
 
     // std::cout << "Enabling reuse_address on output socket" << std::endl;
     // outSocket.set_option(boost::asio::ip::udp::socket::reuse_address(true), ec);
 
-    outSocket.bind(sender_endpoint, ec);
+    outSocket.bind(reflector_endpoint, ec);
     if (ec.failed()) {
         std::cout << "Bind failed with message: " << ec.message() << std::endl;
         return -1;
@@ -90,11 +90,12 @@ int main(int argc, char** argv) {
         // socket.send_to(boost::asio::buffer(buffer, bytes_transferred), sender);
         // std::cout << "Packet received (" << std::to_string(bytes_transferred) << "B), from " << sender.address() << ": " << sender.port() << std::endl;
 
-        boost::asio::ip::udp::endpoint sender_endpoint;
-        std::size_t bytes_transferred = inpSocket.receive_from(boost::asio::buffer(buffer), sender_endpoint);
+        boost::asio::ip::udp::endpoint originator_endpoint;
+        std::size_t bytes_transferred = inpSocket.receive_from(boost::asio::buffer(buffer), originator_endpoint);
 
-        if (sender_endpoint.address() != listen_addr) {
-            std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << sender_endpoint.address() << " to " << listen_endpoint.address() << ": " << listen_endpoint.port() << " on " << sender_endpoint.address() << std::endl;
+        if (originator_endpoint.address() != listener_addr) {
+            // std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << originator_endpoint.address() << " to " << originator_endpoint.address() << ":" << listen_endpoint.port() << " on " << reflector_endpoint.address() << std::endl;
+            std::cout << "Will forward " << std::to_string(bytes_transferred) << "B from " << originator_endpoint.address() << " to " << originator_endpoint.address() << ":" << listen_endpoint.port() << " on " << outSocket.local_endpoint().address() << std::endl;
         } else {
             std::cout << "Filtering out packet originating from us" << std::endl;
         }

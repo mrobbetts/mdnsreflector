@@ -24,30 +24,30 @@ struct Packet {
 
 struct mDNSListener {
 
-    std::string const address_mcast = "224.0.0.251"; // mDNS.
-    static constexpr unsigned short const port_mcast = 5353;
+    std::string const mdnsAddressString = "224.0.0.251"; // mDNS.
+    static constexpr unsigned short const mdnsPort = 5353;
+
+    ~mDNSListener() {
+        mInpSocket.set_option(boost::asio::ip::multicast::leave_group(boost::asio::ip::address::from_string(mdnsAddressString)));
+    }
 
     mDNSListener(std::string listenAddrString) : mListenAddr(boost::asio::ip::address::from_string(listenAddrString)),
-                                                 //mListenEndpoint(boost::asio::ip::address::from_string(address_mcast), port_mcast),
                                                  mInpSocket(mIO_context) {
-
-        // auto const listenAddr = boost::asio::ip::address::from_string(listenAddrString);
-        auto const mdnsEndpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(address_mcast), port_mcast);
+        auto const mdnsAddress  = boost::asio::ip::address::from_string(mdnsAddressString);
+        auto const mdnsEndpoint = boost::asio::ip::udp::endpoint(mdnsAddress, mdnsPort);
 
         std::cout << "Opening new input socket" << std::endl;
-        // mInpSocket.open(mListenEndpoint.protocol()); // boost::asio::ip::udp::socket
         mInpSocket.open(mdnsEndpoint.protocol()); // boost::asio::ip::udp::socket
 
         std::cout << "Enabling reuse_address on input socket" << std::endl;
         mInpSocket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
 
-        // mInpSocket.bind(mListenEndpoint);
         mInpSocket.bind(mdnsEndpoint);
         std::cout << "Binding to input socket (" << mdnsEndpoint.address() << ":" << mdnsEndpoint.port() << ")" << std::endl;
 
         std::cout << "Joining multicast group on input socket" << std::endl;
-        mInpSocket.set_option(boost::asio::ip::multicast::join_group(boost::asio::ip::address::from_string(address_mcast).to_v4(),
-                                                                     boost::asio::ip::address::from_string(listenAddrString).to_v4()));
+        mInpSocket.set_option(boost::asio::ip::multicast::join_group(mdnsAddress.to_v4(),
+                                                                     mListenAddr.to_v4()));
     }
 
     Packet receiveFrom() {
@@ -58,17 +58,16 @@ struct mDNSListener {
 
     boost::asio::io_context mIO_context;
     boost::asio::ip::address mListenAddr;
-    // boost::asio::ip::udp::endpoint mListenEndpoint;
     boost::asio::ip::udp::socket mInpSocket;
 };
 
 struct mDNSSender {
 
-    std::string const address_mcast = "224.0.0.251"; // mDNS.
-    static constexpr unsigned short const port_mcast = 5353;
+    std::string const mdnsAddressString = "224.0.0.251"; // mDNS.
+    static constexpr unsigned short const mdnsPort = 5353;
 
     mDNSSender(std::string sendFromAddr) : mSenderAddr(boost::asio::ip::address::from_string(sendFromAddr)),
-                                           mSenderEndpoint(mSenderAddr, port_mcast),
+                                           mSenderEndpoint(mSenderAddr, mdnsPort),
                                            mOutSocket(mIO_context) {
 
         std::cout << "Opening output socket" << std::endl;
@@ -76,6 +75,12 @@ struct mDNSSender {
 
         std::cout << "Setting hops on output socket" << std::endl;
         mOutSocket.set_option(boost::asio::ip::multicast::hops(1)); // set hops
+
+        std::cout << "Disabling loopback on the output socket" << std::endl;
+        mOutSocket.set_option(boost::asio::ip::multicast::enable_loopback(false));
+
+        std::cout << "Setting the interface from which to send from the output socket" << std::endl;
+        mOutSocket.set_option(boost::asio::ip::multicast::outbound_interface(mSenderAddr.to_v4()));
 
         mOutSocket.bind(mSenderEndpoint);
         std::cout << "Binding to output socket (" << mOutSocket.local_endpoint().address() << ":" << mOutSocket.local_endpoint().port() << ")" << std::endl;
@@ -85,7 +90,7 @@ struct mDNSSender {
         mOutSocket.send_to(boost::asio::buffer(p.mBuffer, p.mBytesTransferred), ep);
     }
 
-    // boost::asio::ip::udp::endpoint reflector_endpoint(reflector_addr, port_mcast);
+    // boost::asio::ip::udp::endpoint reflector_endpoint(reflector_addr, mdnsPort);
     // boost::asio::ip::udp::socket   outSocket(io_context);
 
     // std::cout << "Opening output socket" << std::endl;

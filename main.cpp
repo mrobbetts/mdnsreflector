@@ -45,6 +45,9 @@ struct mDNSListener {
         mInpSocket.bind(mdnsEndpoint);
         std::cout << "Binding to input socket (" << mdnsEndpoint.address() << ":" << mdnsEndpoint.port() << ")" << std::endl;
 
+        std::cout << "Setting the interface from which to send (our IGMP join request)" << std::endl;
+        mInpSocket.set_option(boost::asio::ip::multicast::outbound_interface(mListenAddr.to_v4()));
+
         std::cout << "Joining multicast group on input socket" << std::endl;
         mInpSocket.set_option(boost::asio::ip::multicast::join_group(mdnsAddress.to_v4(),
                                                                      mListenAddr.to_v4()));

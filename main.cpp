@@ -27,25 +27,27 @@ struct mDNSListener {
     std::string const address_mcast = "224.0.0.251"; // mDNS.
     static constexpr unsigned short const port_mcast = 5353;
 
-    mDNSListener(std::string listenAddr) : mListenAddr(boost::asio::ip::address::from_string(listenAddr)),
-                                           mListenEndpoint(boost::asio::ip::address::from_string(address_mcast), port_mcast),
-                                           mInpSocket(mIO_context) {
+    mDNSListener(std::string listenAddrString) : mListenAddr(boost::asio::ip::address::from_string(listenAddrString)),
+                                                 //mListenEndpoint(boost::asio::ip::address::from_string(address_mcast), port_mcast),
+                                                 mInpSocket(mIO_context) {
+
+        // auto const listenAddr = boost::asio::ip::address::from_string(listenAddrString);
+        auto const mdnsEndpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(address_mcast), port_mcast);
 
         std::cout << "Opening new input socket" << std::endl;
-        mInpSocket.open(mListenEndpoint.protocol()); // boost::asio::ip::udp::socket
+        // mInpSocket.open(mListenEndpoint.protocol()); // boost::asio::ip::udp::socket
+        mInpSocket.open(mdnsEndpoint.protocol()); // boost::asio::ip::udp::socket
 
         std::cout << "Enabling reuse_address on input socket" << std::endl;
         mInpSocket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
 
-        // std::cout << "Enabling reuse_address on input socket" << std::endl;
-        // inpSocket.set_option(boost::asio::ip::multicast::hops(1), ec); // set hops
-
-        mInpSocket.bind(mListenEndpoint);
-        std::cout << "Binding to input socket (" << mListenEndpoint.address() << ":" << mListenEndpoint.port() << ")" << std::endl;
+        // mInpSocket.bind(mListenEndpoint);
+        mInpSocket.bind(mdnsEndpoint);
+        std::cout << "Binding to input socket (" << mdnsEndpoint.address() << ":" << mdnsEndpoint.port() << ")" << std::endl;
 
         std::cout << "Joining multicast group on input socket" << std::endl;
         mInpSocket.set_option(boost::asio::ip::multicast::join_group(boost::asio::ip::address::from_string(address_mcast).to_v4(),
-                                                                     mListenAddr.to_v4()));
+                                                                     boost::asio::ip::address::from_string(listenAddrString).to_v4()));
     }
 
     Packet receiveFrom() {
@@ -56,7 +58,7 @@ struct mDNSListener {
 
     boost::asio::io_context mIO_context;
     boost::asio::ip::address mListenAddr;
-    boost::asio::ip::udp::endpoint mListenEndpoint;
+    // boost::asio::ip::udp::endpoint mListenEndpoint;
     boost::asio::ip::udp::socket mInpSocket;
 };
 

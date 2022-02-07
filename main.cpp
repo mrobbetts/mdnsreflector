@@ -1,6 +1,7 @@
 // Standard includes.
 #include <iostream>
 #include <vector>
+#include <iostream>
 
 // 3rd party includes.
 #include <boost/asio.hpp>
@@ -9,6 +10,12 @@
 
 struct Packet {
     Packet(std::size_t numBytes) : mBuffer(numBytes) {}
+
+    operator std::string() const {
+        std::stringstream os;
+        os << std::to_string(mBytesTransferred) << "B from " << mOriginatorEndpoint.address();
+        return os.str();
+    }
 
     std::vector<std::byte> mBuffer;
     std::size_t mBytesTransferred;
@@ -103,8 +110,7 @@ void listenLoop(mDNSListener & listener) {
         auto const packet = listener.receiveFrom();
 
         if (packet.mOriginatorEndpoint.address().to_v4() != listener.mListenAddr.to_v4()) {
-            // std::cout << "Will forward " << std::to_string(packet.mBytesTransferred) << "B from " << packet.mOriginatorEndpoint.address() << " (i.e. _not_ " << listener.mListenAddr.to_v4() << ") to " << listen_endpoint.address() << ":" << listen_endpoint.port() << " on " << outSocket.local_endpoint().address() << std::endl;
-            std::cout << "Saw packet " << std::to_string(packet.mBytesTransferred) << "B from " << packet.mOriginatorEndpoint.address() << " (i.e. _not_ " << listener.mListenAddr.to_v4() << ")" << std::endl;
+            std::cout << "Saw packet " << std::string(packet) << " (i.e. _not_ " << listener.mListenAddr.to_v4() << ")" << std::endl;
         } else {
             std::cout << "Saw packet originating from us" << std::endl;
         }
@@ -121,7 +127,7 @@ void reflectLoop(mDNSListener & listener, mDNSSender & sender) {
         auto const packet = listener.receiveFrom();
 
         if (packet.mOriginatorEndpoint.address().to_v4() != listener.mListenAddr.to_v4()) {
-            std::cout << "Saw packet " << std::to_string(packet.mBytesTransferred) << "B from " << packet.mOriginatorEndpoint.address() << " (i.e. _not_ " << listener.mListenAddr.to_v4() << ")" << std::endl;
+            std::cout << "Saw packet " << std::string(packet) << " (i.e. _not_ " << listener.mListenAddr.to_v4() << ")" << std::endl;
             std::cout << "Will forward to " << address_mcast << ":" << port_mcast << " on " << sender.mSenderAddr.to_v4() << std::endl;
             sender.sendTo(packet, boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(address_mcast), port_mcast));
         } else {
